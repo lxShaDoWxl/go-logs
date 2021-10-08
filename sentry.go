@@ -3,6 +3,7 @@ package logs
 import (
 	"context"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -42,7 +43,7 @@ func DefferSentry() {
 	if err := recover(); err != nil {
 		hub := sentry.CurrentHub().Clone()
 		if v, ok := err.(Exception); ok {
-			hub.Scope().SetContext("exception_metadata", v.Meta)
+			hub.Scope().SetContext("exception_metadata", recursiveUnwrap(v.GetMeta(), 1))
 			err = v.Err
 		}
 		// filterFrames removes frames from outgoing events that reference the
@@ -112,11 +113,25 @@ func sendLogSentry(ctx context.Context, err error) {
 		hub = sentry.CurrentHub().Clone()
 	}
 	if v, ok := err.(Exception); ok {
-		hub.Scope().SetContext("exception_metadata", v.Meta)
+		hub.Scope().SetContext("exception_metadata", recursiveUnwrap(v.GetMeta(), 1))
 		err = v.Err
 	}
 	eventID := hub.CaptureException(err)
 	if eventID != nil {
 		hub.Flush(time.Second * time.Duration(5))
 	}
+}
+func recursiveUnwrap(maps map[string]interface{}, level int) map[string]interface{} {
+	var result = make(map[string]interface{})
+	if value, ok := maps["level_1"]; ok {
+		result["level_"+strconv.Itoa(level)] = value
+		if value2, ok2 := maps["level_2"]; ok2 {
+			values := recursiveUnwrap(value2.(map[string]interface{}), level+1)
+			for _, v := range values {
+				level = level + 1
+				result["level_"+strconv.Itoa(level)] = v
+			}
+		}
+	}
+	return result
 }
