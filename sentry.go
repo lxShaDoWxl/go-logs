@@ -11,17 +11,25 @@ import (
 	"google.golang.org/grpc"
 )
 
+type Plugin interface {
+	Initialize()
+}
 type ConfigSentry struct {
 	DSN         string
 	Environment string
+	Plugins     []Plugin
 }
 
 var configSentry = ConfigSentry{}
 
 func initializeSentry(c ConfigSentry) {
 	configSentry = c
-	if configSentry.DSN != "" {
-		initSentry()
+	if configSentry.DSN == "" {
+		return
+	}
+	initSentry()
+	for _, plugin := range c.Plugins {
+		plugin.Initialize()
 	}
 }
 func ModifyGrpc(
@@ -128,7 +136,7 @@ func recursiveUnwrap(maps map[string]interface{}, level int) map[string]interfac
 		if value2, ok2 := maps["level_2"]; ok2 {
 			values := recursiveUnwrap(value2.(map[string]interface{}), level+1)
 			for _, v := range values {
-				level = level + 1
+				level++
 				result["level_"+strconv.Itoa(level)] = v
 			}
 		}

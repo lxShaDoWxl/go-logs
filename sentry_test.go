@@ -2,9 +2,10 @@ package logs
 
 import (
 	"context"
-	"golang.org/x/xerrors"
 	"os"
 	"testing"
+
+	"golang.org/x/xerrors"
 )
 
 func TestException(t *testing.T) {
