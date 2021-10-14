@@ -70,11 +70,12 @@ func (l *loggerDB) Trace(ctx context.Context, begin time.Time, fc func() (sql st
 	hub.AddBreadcrumb(&sentry.Breadcrumb{
 		Category: "sql.query",
 		Message:  sql,
-		Level:    sentry.LevelInfo,
 		Data: map[string]interface{}{
 			"executionTimeMs": float64(elapsed.Nanoseconds()) / 1e6,
 			// "connectionName":  l.connectionName,
 		},
+		Level:     sentry.LevelInfo,
+		Timestamp: time.Now(),
 	}, nil)
 
 }
