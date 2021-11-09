@@ -32,6 +32,12 @@ func initializeSentry(c ConfigSentry) {
 		plugin.Initialize()
 	}
 }
+func AddedSentryPlugin(plugins ...Plugin) {
+	for _, plugin := range plugins {
+		plugin.Initialize()
+	}
+}
+
 func ModifyGrpc(
 	streamMiddlewares []grpc.StreamServerInterceptor,
 	unaryMiddlewares []grpc.UnaryServerInterceptor,
