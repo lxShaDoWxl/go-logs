@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/getsentry/sentry-go v0.11.0
 	github.com/gin-gonic/gin v1.4.0
+	github.com/go-errors/errors v1.0.1
 )
 
 require (
