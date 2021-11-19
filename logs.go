@@ -1,14 +1,17 @@
 package logs
 
 import (
+	"cdr.dev/slog/sloggers/sloghuman"
 	"context"
 	"fmt"
+	"github.com/go-errors/errors"
 	"os"
 	"strings"
 
-	"github.com/beego/beego/v2/core/logs"
-	"golang.org/x/xerrors"
+	"cdr.dev/slog"
 )
+
+var L = slog.Make(sloghuman.Sink(os.Stdout))
 
 type Config struct {
 	ConfigSentry ConfigSentry
@@ -21,21 +24,34 @@ func Initialize(c Config) {
 // Info logs a message at info level.
 func Info(ctx context.Context, f interface{}, v ...interface{}) {
 	message := formatLog(f, v...)
-	logs.Info(message)
+	L.Info(ctx, message)
 }
 
 // Error logs a message at error level.
 func Error(ctx context.Context, err error) {
-	logs.Error(err.Error())
-	sendLogSentry(ctx, err)
+	slog.Helper()
+	v := changeTypeError(err)
+	L.Error(ctx, "Error:", slog.Error(v))
+	sendLogSentry(ctx, v)
 }
 
-// Fatalf logs a message at critical level.
-func Fatalf(ctx context.Context, f interface{}, v ...interface{}) {
-	message := formatLog(f, v...)
-	logs.Critical(message)
-	sendLogSentry(ctx, xerrors.New(message))
-	os.Exit(1)
+// FatalError logs a message at critical level.
+func FatalError(ctx context.Context, err error) {
+	slog.Helper()
+
+	v := changeTypeError(err)
+
+	sendLogSentry(ctx, v)
+	L.Fatal(ctx, v.ErrorStack())
+
+}
+
+func changeTypeError(err error) *errors.Error {
+	v, ok := err.(*errors.Error)
+	if !ok {
+		v = errors.Wrap(err, 2)
+	}
+	return v
 }
 func formatLog(f interface{}, v ...interface{}) string {
 	var msg string

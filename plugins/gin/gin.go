@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
+	"github.com/go-errors/errors"
 	"net"
 	"net/http"
 	"os"
@@ -66,9 +67,13 @@ func (h *handler) handle(ctx *gin.Context) {
 func (h *handler) recoverWithSentry(hub *sentry.Hub, r *http.Request) {
 	if err := recover(); err != nil {
 		if !isBrokenPipeError(err) {
+			v, ok := err.(*errors.Error)
+			if !ok {
+				v = errors.Wrap(err, 2)
+			}
 			eventID := hub.RecoverWithContext(
 				context.WithValue(r.Context(), sentry.RequestContextKey, r),
-				err,
+				v,
 			)
 			if eventID != nil && h.waitForDelivery {
 				hub.Flush(h.timeout)

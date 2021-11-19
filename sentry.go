@@ -2,6 +2,7 @@ package logs
 
 import (
 	"context"
+	"github.com/go-errors/errors"
 	"log"
 	"strconv"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"google.golang.org/grpc"
 )
 
+//TODO в плагинах добавить функцию которая будет модифицировать получение hub в функции sendLogSentry это надо что бы вытащить из gin контекта hub и реквест
 type Plugin interface {
 	Initialize()
 }
@@ -37,6 +39,14 @@ func AddedSentryPlugin(plugins ...Plugin) {
 		plugin.Initialize()
 	}
 }
+func AddSentryHubCtx(ctx context.Context, hub *sentry.Hub) context.Context {
+
+	checkHub := sentry.GetHubFromContext(ctx)
+	if checkHub != nil {
+		return ctx
+	}
+	return sentry.SetHubOnContext(ctx, hub)
+}
 
 func ModifyGrpc(
 	streamMiddlewares []grpc.StreamServerInterceptor,
@@ -59,6 +69,10 @@ func DefferSentry() {
 		if v, ok := err.(Exception); ok {
 			hub.Scope().SetContext("exception_metadata", recursiveUnwrap(v.GetMeta(), 1))
 			err = v.Err
+		}
+		vError, ok := err.(*errors.Error)
+		if !ok {
+			vError = errors.Wrap(err, 2)
 		}
 		// filterFrames removes frames from outgoing events that reference the
 		filterFrames := func(event *sentry.Event) {
@@ -89,19 +103,19 @@ func DefferSentry() {
 			})
 		})
 		// Create an event and enqueue it for reporting.
-		hub.Recover(err)
+		hub.Recover(vError)
 		// Because the goroutine running this code is going to crash the
 		// program, call Flush to send the event to Sentry before it is too
 		// late. Set the timeout to an appropriate value depending on your
 		// program. The value is the maximum time to wait before giving up
 		// and dropping the event.
-		hub.Flush(2 * time.Second)
+		hub.Flush(5 * time.Second)
 		// Note that if multiple goroutines panic, possibly only the first
 		// one to call Flush will succeed in sending the event. If you want
 		// to capture multiple panics and still crash the program
 		// afterwards, you need to coordinate error reporting and
 		// termination differently.
-		log.Fatalf("%v", err)
+		L.Fatal(context.Background(), vError.ErrorStack())
 	}
 	sentry.Flush(2 * time.Second)
 }

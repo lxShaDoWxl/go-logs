@@ -3,6 +3,7 @@ package logs
 
 import (
 	"context"
+	"github.com/go-errors/errors"
 
 	"github.com/getsentry/sentry-go"
 
@@ -14,7 +15,7 @@ import (
 
 func recoverWithSentry(ctx context.Context) {
 	if err := recover(); err != nil {
-		Fatalf(ctx, "%v", err)
+		FatalError(ctx, errors.Wrap(err, 2))
 	}
 }
 
