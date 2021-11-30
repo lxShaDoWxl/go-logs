@@ -37,8 +37,6 @@ linters-settings:
     min-complexity: 15
   goimports:
     local-prefixes: github.com/lxShaDoWxl/go-logs
-  golint:
-    min-confidence: 0
   gomnd:
     settings:
       mnd:
@@ -70,6 +68,7 @@ linters:
     - dogsled
     - dupl
     - errcheck
+    - exportloopref
     - exhaustive
     - funlen
     - gochecknoinits
@@ -78,7 +77,6 @@ linters:
     - gocyclo
     - gofmt
     - goimports
-    - golint
 #    - gomnd
     - goprintffuncname
     - gosec
@@ -90,8 +88,8 @@ linters:
     - misspell
     - nakedret
     - noctx
+    - nolintlint
     - rowserrcheck
-    - scopelint
     - staticcheck
     - structcheck
     - stylecheck
@@ -100,7 +98,8 @@ linters:
     - unparam
     - unused
     - varcheck
-#    - whitespace
+    - whitespace
+    - revive
 
   # don't enable:
   # - asciicheck

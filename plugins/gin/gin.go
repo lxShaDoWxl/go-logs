@@ -2,14 +2,15 @@ package gin
 
 import (
 	"context"
-	"github.com/getsentry/sentry-go"
-	"github.com/gin-gonic/gin"
-	"github.com/go-errors/errors"
 	"net"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/getsentry/sentry-go"
+	"github.com/gin-gonic/gin"
+	"github.com/go-errors/errors"
 )
 
 const valuesKey = "sentry"
@@ -41,7 +42,6 @@ func NewPluginGin(c *ConfigPluginGin) *PluginGin {
 }
 
 func (p PluginGin) Initialize() {
-
 	timeout := p.config.Timeout
 	if timeout == 0 {
 		timeout = 2 * time.Second
