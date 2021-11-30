@@ -46,12 +46,12 @@ func FatalError(ctx context.Context, err error) {
 
 }
 
-func changeTypeError(err error) *errors.Error {
-	v, ok := err.(*errors.Error)
-	if !ok {
-		v = errors.Wrap(err, 2)
+func changeTypeError(err error) Exception {
+	if v, ok := err.(Exception); ok {
+		return v
 	}
-	return v
+	return NewException(errors.Wrap(err, 2), nil)
+
 }
 func formatLog(f interface{}, v ...interface{}) string {
 	var msg string
