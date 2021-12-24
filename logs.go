@@ -31,7 +31,7 @@ func Info(ctx context.Context, f interface{}, v ...interface{}) {
 func Error(ctx context.Context, err error) {
 	slog.Helper()
 	v := changeTypeError(err)
-	L.Error(ctx, "Error:", slog.Error(v))
+	L.Error(ctx, v.ErrorStack())
 	sendLogSentry(ctx, v)
 }
 

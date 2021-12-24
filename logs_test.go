@@ -10,6 +10,9 @@ func TestFatalError(t *testing.T) {
 	defer recoverTest(context.Background())
 	one()
 }
+func TestError(t *testing.T) {
+	Error(context.Background(), errors.New("TestError"))
+}
 func recoverTest(ctx context.Context) {
 	if err := recover(); err != nil {
 
