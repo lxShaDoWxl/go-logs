@@ -2,6 +2,7 @@ package gin
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -13,7 +14,8 @@ import (
 	"github.com/go-errors/errors"
 )
 
-const valuesKey = "sentry"
+const valuesKeyHub = "sentry-hub"
+const valuesKeySpan = "sentry-span"
 
 type handler struct {
 	repanic         bool
@@ -58,9 +60,19 @@ func (h *handler) handle(ctx *gin.Context) {
 	if hub == nil {
 		hub = sentry.CurrentHub().Clone()
 	}
-	hub.Scope().SetRequest(ctx.Request)
-	ctx.Set(valuesKey, hub)
-	defer h.recoverWithSentry(hub, ctx.Request)
+	span := sentry.StartSpan(ctx.Request.Context(), "http.server",
+		sentry.TransactionName(fmt.Sprintf("%s %s", ctx.Request.Method, ctx.Request.URL.Path)),
+		sentry.ContinueFromRequest(ctx.Request),
+	)
+	defer span.Finish()
+	r := ctx.Request.WithContext(span.Context())
+	if cip := ctx.ClientIP(); cip != "" {
+		r.RemoteAddr = cip
+	}
+	hub.Scope().SetRequest(r)
+	ctx.Set(valuesKeyHub, hub)
+	ctx.Set(valuesKeySpan, span)
+	defer h.recoverWithSentry(hub, r)
 	ctx.Next()
 }
 
@@ -100,9 +112,19 @@ func isBrokenPipeError(err interface{}) bool {
 
 // GetHubFromContext retrieves attached *sentry.Hub instance from gin.Context.
 func GetHubFromContext(ctx *gin.Context) *sentry.Hub {
-	if hub, ok := ctx.Get(valuesKey); ok {
-		if hub, ok := hub.(*sentry.Hub); ok {
-			return hub
+	if hub, ok := ctx.Get(valuesKeyHub); ok {
+		if hubReal, correct := hub.(*sentry.Hub); correct {
+			return hubReal
+		}
+	}
+	return nil
+}
+
+// GetSpanFromContext retrieves attached *sentry.Span instance from gin.Context.
+func GetSpanFromContext(ctx *gin.Context) *sentry.Span {
+	if span, ok := ctx.Get(valuesKeySpan); ok {
+		if spanReal, correct := span.(*sentry.Span); correct {
+			return spanReal
 		}
 	}
 	return nil

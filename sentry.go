@@ -12,14 +12,20 @@ import (
 	"google.golang.org/grpc"
 )
 
-//TODO в плагинах добавить функцию которая будет модифицировать получение hub в функции sendLogSentry это надо что бы вытащить из gin контекта hub и реквест
+// TODO в плагинах добавить функцию которая будет модифицировать получение hub в функции sendLogSentry это надо что бы вытащить из gin контекта hub и реквест
 type Plugin interface {
 	Initialize()
 }
 type ConfigSentry struct {
 	DSN         string
 	Environment string
-	Plugins     []Plugin
+	// The sample rate for performance data submission (0.0 - 1.0)
+	// (defaults to 0.0 (meaning performance monitoring disabled))
+	TracesSampleRate float64
+	// In debug mode, the debug information is printed to stdout to help you
+	// understand what sentry is doing.
+	Debug   bool
+	Plugins []Plugin
 }
 
 var configSentry = ConfigSentry{}
@@ -120,13 +126,11 @@ func DefferSentry() {
 	sentry.Flush(2 * time.Second)
 }
 func initSentry() {
-	sentryDNS := configSentry.DSN
-
-	sentryEnvironment := configSentry.Environment
-
 	err := sentry.Init(sentry.ClientOptions{
-		Dsn:         sentryDNS,
-		Environment: sentryEnvironment,
+		Dsn:              configSentry.DSN,
+		Environment:      configSentry.Environment,
+		TracesSampleRate: configSentry.TracesSampleRate,
+		Debug:            configSentry.Debug,
 	})
 	if err != nil {
 		log.Fatalf("sentry.Init: %s", err)
