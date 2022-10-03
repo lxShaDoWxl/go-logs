@@ -56,23 +56,29 @@ func (p PluginGin) Initialize() {
 }
 
 func (h *handler) handle(ctx *gin.Context) {
-	hub := sentry.GetHubFromContext(ctx.Request.Context())
+	ctxStd := ctx.Request.Context()
+	hub := sentry.GetHubFromContext(ctxStd)
 	if hub == nil {
 		hub = sentry.CurrentHub().Clone()
+		ctxStd = sentry.SetHubOnContext(ctxStd, hub)
 	}
-	span := sentry.StartSpan(ctx.Request.Context(), "http.server",
+	span := sentry.StartSpan(ctxStd, "http.server",
 		sentry.TransactionName(fmt.Sprintf("%s %s", ctx.Request.Method, ctx.Request.URL.Path)),
 		sentry.ContinueFromRequest(ctx.Request),
 	)
 	defer span.Finish()
-	r := ctx.Request.WithContext(span.Context())
+	ctx.Request = ctx.Request.WithContext(span.Context())
 	if cip := ctx.ClientIP(); cip != "" {
-		r.RemoteAddr = cip
+		hub.Scope().SetUser(sentry.User{
+			IPAddress: cip,
+		})
 	}
-	hub.Scope().SetRequest(r)
+
+	hub.Scope().SetRequest(ctx.Request)
+
 	ctx.Set(valuesKeyHub, hub)
 	ctx.Set(valuesKeySpan, span)
-	defer h.recoverWithSentry(hub, r)
+	defer h.recoverWithSentry(hub, ctx.Request)
 	ctx.Next()
 }
 
