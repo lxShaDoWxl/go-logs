@@ -2,7 +2,7 @@ package logs
 
 import (
 	"context"
-	"github.com/go-errors/errors"
+	"github.com/cockroachdb/errors"
 	"testing"
 )
 
@@ -15,8 +15,7 @@ func TestError(t *testing.T) {
 }
 func recoverTest(ctx context.Context) {
 	if err := recover(); err != nil {
-
-		FatalError(ctx, errors.Wrap(err, 2))
+		FatalError(ctx, errors.WithStackDepth(err.(error), 2))
 	}
 }
 func one() {

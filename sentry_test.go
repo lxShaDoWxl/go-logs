@@ -2,7 +2,7 @@ package logs
 
 import (
 	"context"
-	"github.com/go-errors/errors"
+	"github.com/cockroachdb/errors"
 	"os"
 	"testing"
 )
@@ -17,6 +17,7 @@ func TestException(t *testing.T) {
 		errors.New("test exception"),
 		map[string]map[string]string{"test": {"test": "test"}},
 	))
+
 	Error(context.Background(), NewException(
 		NewException(NewException(
 			errors.New("test tree exception"),
@@ -24,4 +25,6 @@ func TestException(t *testing.T) {
 		), confg),
 		map[string]map[string]string{"test": {"test": "test"}},
 	))
+	// defer DefferSentry()
+	// panic(errors.New("test exception"))
 }

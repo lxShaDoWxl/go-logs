@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
-	"github.com/go-errors/errors"
 )
 
 const valuesKeyHub = "sentry-hub"
@@ -85,13 +85,9 @@ func (h *handler) handle(ctx *gin.Context) {
 func (h *handler) recoverWithSentry(hub *sentry.Hub, r *http.Request) {
 	if err := recover(); err != nil {
 		if !isBrokenPipeError(err) {
-			v, ok := err.(*errors.Error)
-			if !ok {
-				v = errors.Wrap(err, 2)
-			}
 			eventID := hub.RecoverWithContext(
 				context.WithValue(r.Context(), sentry.RequestContextKey, r),
-				v,
+				errors.WrapWithDepth(2, err.(error), ""),
 			)
 			if eventID != nil && h.waitForDelivery {
 				hub.Flush(h.timeout)
