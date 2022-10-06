@@ -4,7 +4,7 @@ import (
 	"cdr.dev/slog/sloggers/sloghuman"
 	"context"
 	"fmt"
-	"github.com/cockroachdb/errors"
+	"github.com/go-errors/errors"
 	"os"
 	"strings"
 
@@ -31,8 +31,7 @@ func Info(ctx context.Context, f interface{}, v ...interface{}) {
 func Error(ctx context.Context, err error) {
 	slog.Helper()
 	v := changeTypeError(err)
-	// L.Error(ctx, v.ErrorStack())
-	L.Error(ctx, fmt.Sprintf("%+v", v.Err))
+	L.Error(ctx, v.ErrorStack())
 	sendLogSentry(ctx, v)
 }
 
@@ -51,7 +50,7 @@ func changeTypeError(err error) Exception {
 	if v, ok := err.(Exception); ok {
 		return v
 	}
-	return NewException(errors.WithStackDepth(err, 2), nil)
+	return NewException(errors.Wrap(err, 2), nil)
 
 }
 func formatLog(f interface{}, v ...interface{}) string {

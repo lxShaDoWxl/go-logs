@@ -2,16 +2,17 @@ package logs
 
 import (
 	"context"
-	"fmt"
-	"github.com/cockroachdb/errors"
+	"github.com/go-errors/errors"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/getsentry/sentry-go"
 	"google.golang.org/grpc"
 )
 
+// TODO в плагинах добавить функцию которая будет модифицировать получение hub в функции sendLogSentry это надо что бы вытащить из gin контекта hub и реквест
 type Plugin interface {
 	Initialize()
 }
@@ -70,16 +71,57 @@ func ModifyGrpc(
 func DefferSentry() {
 
 	if err := recover(); err != nil {
-		L.Fatal(context.Background(), fmt.Sprintf("%+v", err))
-
 		hub := sentry.CurrentHub().Clone()
 		if v, ok := err.(Exception); ok {
 			hub.Scope().SetContext("exception_metadata", recursiveUnwrap(v.GetMeta(), 1))
 			err = v.Err
-			sendLogSentry(context.Background(), v)
-		} else {
-			sendLogSentry(context.Background(), err.(error))
 		}
+		vError, ok := err.(*errors.Error)
+		if !ok {
+			vError = errors.Wrap(err, 2)
+		}
+		// filterFrames removes frames from outgoing events that reference the
+		filterFrames := func(event *sentry.Event) {
+			for _, e := range event.Exception {
+				if e.Stacktrace == nil {
+					continue
+				}
+				frames := e.Stacktrace.Frames[:0]
+				for index := range e.Stacktrace.Frames {
+					frame := e.Stacktrace.Frames[index]
+					if strings.HasSuffix(frame.Module, "grpc_sentry") && strings.HasPrefix(frame.Function, "Recover") {
+						continue
+					}
+					frames = append(frames, frame)
+				}
+				e.Stacktrace.Frames = frames
+			}
+		}
+
+		// Add an EventProcessor to the scope. The event processor is a function
+		// that can change events before they are sent to Sentry.
+		// Alternatively, see also ClientOptions.BeforeSend, which is a special
+		// event processor applied to error events.
+		hub.ConfigureScope(func(scope *sentry.Scope) {
+			scope.AddEventProcessor(func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
+				filterFrames(event)
+				return event
+			})
+		})
+		// Create an event and enqueue it for reporting.
+		hub.Recover(vError)
+		// Because the goroutine running this code is going to crash the
+		// program, call Flush to send the event to Sentry before it is too
+		// late. Set the timeout to an appropriate value depending on your
+		// program. The value is the maximum time to wait before giving up
+		// and dropping the event.
+		hub.Flush(5 * time.Second)
+		// Note that if multiple goroutines panic, possibly only the first
+		// one to call Flush will succeed in sending the event. If you want
+		// to capture multiple panics and still crash the program
+		// afterwards, you need to coordinate error reporting and
+		// termination differently.
+		L.Fatal(context.Background(), vError.ErrorStack())
 	}
 	sentry.Flush(2 * time.Second)
 }
@@ -104,31 +146,9 @@ func sendLogSentry(ctx context.Context, err error) {
 	}
 	if v, ok := err.(Exception); ok {
 		hub.Scope().SetContext("exception_metadata", recursiveUnwrap(v.GetMeta(), 1))
-		// hub.Scope().SetFingerprint([]string{v.ErrorStack()})
-
 		err = v.Err
 	}
-
-	// eventID := hub.CaptureException(err)
-	event, extraDetails := errors.BuildSentryReport(err)
-
-	for extraKey, extraValue := range extraDetails {
-		event.Extra[extraKey] = extraValue
-	}
-
-	// Avoid leaking the machine's hostname by injecting the literal "<redacted>".
-	// Otherwise, sentry.Client.Capture will see an empty ServerName field and
-	// automatically fill in the machine's hostname.
-	event.ServerName = "<redacted>"
-
-	tags := map[string]string{
-		"report_type": "error",
-	}
-	for key, value := range tags {
-		event.Tags[key] = value
-	}
-	eventID := hub.CaptureEvent(event)
-	// eventID := errors.ReportError(err)
+	eventID := hub.CaptureException(err)
 	if eventID != nil {
 		hub.Flush(time.Second * time.Duration(5))
 	}

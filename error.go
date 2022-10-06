@@ -1,8 +1,7 @@
 package logs
 
 import (
-	"fmt"
-	"github.com/cockroachdb/errors"
+	"github.com/go-errors/errors"
 	"reflect"
 )
 
@@ -12,9 +11,13 @@ type Exception struct {
 }
 
 func NewException(err error, meta interface{}) Exception {
+	v, ok := err.(*errors.Error)
+	if !ok {
+		v = errors.Wrap(err, 1)
+	}
 	return Exception{
 		meta: meta,
-		Err:  errors.WithMessage(err, ""),
+		Err:  v,
 	}
 
 }
@@ -25,7 +28,11 @@ func (e Exception) Unwrap() error {
 	return e.Err
 }
 func (e Exception) ErrorStack() string {
-	return fmt.Sprintf("%+v", e.Err)
+	v, ok := e.Err.(*errors.Error)
+	if !ok {
+		v = errors.Wrap(e.Err, 2)
+	}
+	return v.ErrorStack()
 }
 
 func (e Exception) GetMeta() map[string]interface{} {
