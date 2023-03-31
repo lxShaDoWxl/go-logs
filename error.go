@@ -1,33 +1,33 @@
 package logs
 
 import (
-	"github.com/go-errors/errors"
 	"reflect"
+
+	"github.com/go-errors/errors"
 )
 
-type Exception struct {
+type ExceptionError struct {
 	meta interface{}
 	Err  error
 }
 
-func NewException(err error, meta interface{}) Exception {
+func NewException(err error, meta interface{}) ExceptionError {
 	v, ok := err.(*errors.Error)
 	if !ok {
 		v = errors.Wrap(err, 1)
 	}
-	return Exception{
+	return ExceptionError{
 		meta: meta,
 		Err:  v,
 	}
-
 }
-func (e Exception) Error() string {
+func (e ExceptionError) Error() string {
 	return e.Err.Error()
 }
-func (e Exception) Unwrap() error {
+func (e ExceptionError) Unwrap() error {
 	return e.Err
 }
-func (e Exception) ErrorStack() string {
+func (e ExceptionError) ErrorStack() string {
 	v, ok := e.Err.(*errors.Error)
 	if !ok {
 		v = errors.Wrap(e.Err, 2)
@@ -35,13 +35,13 @@ func (e Exception) ErrorStack() string {
 	return v.ErrorStack()
 }
 
-func (e Exception) GetMeta() map[string]interface{} {
+func (e ExceptionError) GetMeta() map[string]interface{} {
 	var maps = make(map[string]interface{})
 	if e.meta == nil {
 		return nil
 	}
 	maps["level_1"] = map[string]interface{}{reflect.TypeOf(e.meta).String(): e.meta}
-	if v, ok := e.Err.(Exception); ok {
+	if v, ok := e.Err.(ExceptionError); ok {
 		meta := v.GetMeta()
 		if meta != nil {
 			maps["level_2"] = meta

@@ -1,4 +1,4 @@
-//nolint:stylecheck,golint
+//nolint:golint
 package logs
 
 import "time"

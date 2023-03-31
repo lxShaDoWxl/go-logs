@@ -1,8 +1,8 @@
-//nolint:stylecheck,golint
 package logs
 
 import (
 	"context"
+
 	"github.com/go-errors/errors"
 
 	"github.com/getsentry/sentry-go"
@@ -25,7 +25,6 @@ func UnaryServerInterceptor(opts ...Option) grpc.UnaryServerInterceptor {
 		req interface{},
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler) (interface{}, error) {
-
 		hub := sentry.GetHubFromContext(ctx)
 		if hub == nil {
 			hub = sentry.CurrentHub().Clone()
@@ -53,7 +52,6 @@ func StreamServerInterceptor(opts ...Option) grpc.StreamServerInterceptor {
 		ss grpc.ServerStream,
 		info *grpc.StreamServerInfo,
 		handler grpc.StreamHandler) error {
-
 		ctx := ss.Context()
 		hub := sentry.GetHubFromContext(ctx)
 		if hub == nil {

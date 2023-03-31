@@ -2,17 +2,19 @@ package logs
 
 import (
 	"context"
-	"github.com/go-errors/errors"
 	"log"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/go-errors/errors"
+
 	"github.com/getsentry/sentry-go"
 	"google.golang.org/grpc"
 )
 
-// TODO в плагинах добавить функцию которая будет модифицировать получение hub в функции sendLogSentry это надо что бы вытащить из gin контекта hub и реквест
+// TODO в плагинах добавить функцию которая будет модифицировать получение hub в функции sendLogSentry
+// это надо что бы вытащить из gin контекта hub и реквест
 type Plugin interface {
 	Initialize()
 }
@@ -46,7 +48,6 @@ func AddedSentryPlugin(plugins ...Plugin) {
 	}
 }
 func AddSentryHubCtx(ctx context.Context, hub *sentry.Hub) context.Context {
-
 	checkHub := sentry.GetHubFromContext(ctx)
 	if checkHub != nil {
 		return ctx
@@ -64,15 +65,15 @@ func ModifyGrpc(
 	if configSentry.DSN != "" {
 		return append(streamMiddlewares, StreamServerInterceptor()),
 			append(unaryMiddlewares, UnaryServerInterceptor())
-
 	}
 	return streamMiddlewares, unaryMiddlewares
 }
-func DefferSentry() {
 
+//nolint:gocognit //this normal
+func DefferSentry() {
 	if err := recover(); err != nil {
 		hub := sentry.CurrentHub().Clone()
-		if v, ok := err.(Exception); ok {
+		if v, ok := err.(ExceptionError); ok {
 			hub.Scope().SetContext("exception_metadata", recursiveUnwrap(v.GetMeta(), 1))
 			err = v.Err
 		}
@@ -121,7 +122,7 @@ func DefferSentry() {
 		// to capture multiple panics and still crash the program
 		// afterwards, you need to coordinate error reporting and
 		// termination differently.
-		L.Fatal(context.Background(), vError.ErrorStack())
+		pkgLogger.Fatalw("Panic", vError)
 	}
 	sentry.Flush(2 * time.Second)
 }
@@ -144,7 +145,7 @@ func sendLogSentry(ctx context.Context, err error) {
 	if hub == nil {
 		hub = sentry.CurrentHub().Clone()
 	}
-	if v, ok := err.(Exception); ok {
+	if v, ok := err.(ExceptionError); ok {
 		hub.Scope().SetContext("exception_metadata", recursiveUnwrap(v.GetMeta(), 1))
 		err = v.Err
 	}

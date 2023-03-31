@@ -1,4 +1,4 @@
-//nolint:stylecheck,golint
+//nolint:golint
 package logs
 
 import (
@@ -32,7 +32,7 @@ func ReportAlways(error) bool {
 	return true
 }
 
-//nolint:golint
+//nolint:golint,revive
 func ReportOnCodes(cc ...codes.Code) reporter {
 	return func(err error) bool {
 		for i := range cc {
