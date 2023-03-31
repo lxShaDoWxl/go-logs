@@ -13,8 +13,8 @@ var (
 		Level: zerolog.InfoLevel.String(),
 		JSON:  false,
 	}
-	zlog             = zerologr.New(initZLog(DefaultConfigLogger))
-	pkgLogger Logger = LogRLogger{zlogger: zlog}
+	zlog             = zerologr.New(initZLog(DefaultConfigLogger, 3))
+	pkgLogger Logger = LogRLogger{zlogger: zlog.WithCallDepth(1)}
 )
 
 type Logger interface {
@@ -39,7 +39,7 @@ type Config struct {
 
 func Initialize(conf *Config) {
 	initializeSentry(conf.ConfigSentry)
-	SetLogger(LogRLogger{zlogger: zerologr.New(initZLog(conf.Logger))}, conf.Logger.Name)
+	SetLogger(LogRLogger{zlogger: zerologr.New(initZLog(conf.Logger, 3))}, conf.Logger.Name)
 }
 
 // GetLogger returns the logger that was set with SetLogger with an extra depth of 1.
@@ -49,7 +49,7 @@ func GetLogger() Logger {
 
 // SetLogger lets you use a custom logger. Pass in a logr.Logger with default depth.
 func SetLogger(l Logger, name string) {
-	pkgLogger = l.WithCallDepth(2).WithName(name)
+	pkgLogger = l.WithCallDepth(1).WithName(name)
 }
 
 func Debugw(msg string, keysAndValues ...interface{}) {
