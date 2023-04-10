@@ -7,14 +7,17 @@ import (
 	"github.com/rs/zerolog"
 )
 
+const defaultSkipFrames = 3
+
 var (
 	DefaultConfigLogger = &ConfigLogger{
-		Name:  "app",
-		Level: zerolog.InfoLevel.String(),
-		JSON:  false,
+		Name:       "app",
+		Level:      zerolog.DebugLevel.String(),
+		JSON:       false,
+		NameModule: "github.com/lxShaDoWxl/go-logs",
 	}
-	zlog             = zerologr.New(initZLog(DefaultConfigLogger, 3))
-	pkgLogger Logger = LogRLogger{zlogger: zlog.WithCallDepth(1)}
+	zlog             = initZLog(DefaultConfigLogger, defaultSkipFrames)
+	pkgLogger Logger = LogRLogger{zlogger: zerologr.New(&zlog)}
 )
 
 type Logger interface {
@@ -28,9 +31,10 @@ type Logger interface {
 	WithCallDepth(depth int) Logger
 }
 type ConfigLogger struct {
-	Name  string
-	Level string
-	JSON  bool
+	Name       string
+	Level      string
+	JSON       bool
+	NameModule string
 }
 type Config struct {
 	ConfigSentry ConfigSentry
@@ -39,12 +43,19 @@ type Config struct {
 
 func Initialize(conf *Config) {
 	initializeSentry(conf.ConfigSentry)
-	SetLogger(LogRLogger{zlogger: zerologr.New(initZLog(conf.Logger, 3))}, conf.Logger.Name)
+	zlog = initZLog(conf.Logger, defaultSkipFrames)
+	SetLogger(LogRLogger{zlogger: zerologr.New(&zlog)}, conf.Logger.Name)
+}
+
+// GetLogger returns the logger that was set with SetLogger with an extra depth of 1.
+func GetZLogger() *zerolog.Logger {
+	l := zlog
+	return &l
 }
 
 // GetLogger returns the logger that was set with SetLogger with an extra depth of 1.
 func GetLogger() Logger {
-	return LogRLogger{zlogger: zlog}
+	return LogRLogger{zlogger: zerologr.New(&zlog)}
 }
 
 // SetLogger lets you use a custom logger. Pass in a logr.Logger with default depth.

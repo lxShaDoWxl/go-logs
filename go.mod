@@ -3,7 +3,7 @@ module github.com/lxShaDoWxl/go-logs
 go 1.20
 
 require (
-	github.com/getsentry/sentry-go v0.13.0
+	github.com/getsentry/sentry-go v0.20.0
 	github.com/go-errors/errors v1.4.2
 	github.com/go-logr/logr v1.2.4
 	github.com/go-logr/zerologr v1.2.3
@@ -15,8 +15,8 @@ require (
 
 require (
 	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/mattn/go-colorable v0.1.12 // indirect
-	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.18 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/net v0.8.0 // indirect

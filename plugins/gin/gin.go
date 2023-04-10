@@ -3,6 +3,7 @@ package gin
 import (
 	"context"
 	"fmt"
+	"github.com/rs/zerolog"
 	"net"
 	"net/http"
 	"os"
@@ -43,7 +44,7 @@ func NewPluginGin(c *ConfigPluginGin) *PluginGin {
 	return &PluginGin{config: c}
 }
 
-func (p PluginGin) Initialize() {
+func (p PluginGin) Initialize(*zerolog.Logger) {
 	timeout := p.config.Timeout
 	if timeout == 0 {
 		timeout = 2 * time.Second

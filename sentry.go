@@ -2,6 +2,7 @@ package logs
 
 import (
 	"context"
+	"github.com/rs/zerolog"
 	"log"
 	"strconv"
 	"strings"
@@ -16,7 +17,7 @@ import (
 // TODO в плагинах добавить функцию которая будет модифицировать получение hub в функции sendLogSentry
 // это надо что бы вытащить из gin контекта hub и реквест
 type Plugin interface {
-	Initialize()
+	Initialize(*zerolog.Logger)
 }
 type ConfigSentry struct {
 	DSN         string
@@ -39,12 +40,12 @@ func initializeSentry(c ConfigSentry) {
 	}
 	initSentry()
 	for _, plugin := range c.Plugins {
-		plugin.Initialize()
+		plugin.Initialize(&zlog)
 	}
 }
 func AddedSentryPlugin(plugins ...Plugin) {
 	for _, plugin := range plugins {
-		plugin.Initialize()
+		plugin.Initialize(&zlog)
 	}
 }
 func AddSentryHubCtx(ctx context.Context, hub *sentry.Hub) context.Context {

@@ -2,10 +2,10 @@ package gorm
 
 import (
 	"context"
-	"time"
-
 	"github.com/getsentry/sentry-go"
+	"github.com/rs/zerolog"
 	"gorm.io/gorm/logger"
+	"time"
 )
 
 type ConfigPluginGorm struct {
@@ -22,7 +22,7 @@ func NewPluginGorm(c *ConfigPluginGorm) *PluginGorm {
 	return &PluginGorm{config: c}
 }
 
-func (p PluginGorm) Initialize() {
+func (p PluginGorm) Initialize(*zerolog.Logger) {
 
 	if !p.config.EnableTrace {
 		return

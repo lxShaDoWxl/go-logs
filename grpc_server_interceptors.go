@@ -33,10 +33,9 @@ func UnaryServerInterceptor(opts ...Option) grpc.UnaryServerInterceptor {
 
 		span := sentry.StartSpan(ctx, "grpc.server")
 		defer span.Finish()
-
+		span.Description = info.FullMethod
 		// TODO: Perhaps makes sense to use SetRequestBody instead?
 		hub.Scope().SetExtra("requestBody", req)
-		hub.Scope().SetTransaction(info.FullMethod)
 		defer recoverWithSentry(ctx)
 
 		resp, err := handler(ctx, req)
@@ -64,8 +63,7 @@ func StreamServerInterceptor(opts ...Option) grpc.StreamServerInterceptor {
 
 		stream := grpc_middleware.WrapServerStream(ss)
 		stream.WrappedContext = ctx
-
-		hub.Scope().SetTransaction(info.FullMethod)
+		span.Description = info.FullMethod
 		defer recoverWithSentry(ctx)
 
 		err := handler(srv, stream)
