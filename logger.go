@@ -31,10 +31,11 @@ type Logger interface {
 	WithCallDepth(depth int) Logger
 }
 type ConfigLogger struct {
-	Name       string
-	Level      string
-	JSON       bool
-	NameModule string
+	Name         string
+	Level        string
+	JSON         bool
+	NameModule   string
+	IgnorePrefix string
 }
 type Config struct {
 	ConfigSentry ConfigSentry

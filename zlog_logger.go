@@ -17,7 +17,7 @@ func initZLog(conf *ConfigLogger, skipFrameCount int) zerolog.Logger {
 	}
 	logger := l.Level(level).With().Timestamp().Logger()
 	if zerolog.DebugLevel == level {
-		logger = logger.Hook(newCallerHook(conf.NameModule, skipFrameCount))
+		logger = logger.Hook(newCallerHook(conf.NameModule, conf.IgnorePrefix, skipFrameCount))
 	} else {
 		logger = logger.With().CallerWithSkipFrameCount(skipFrameCount).Logger()
 	}

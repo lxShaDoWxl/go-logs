@@ -3,16 +3,21 @@ package logs
 import (
 	"github.com/rs/zerolog"
 	"runtime"
-	"strconv"
+	strconv "strconv"
 	"strings"
 )
 
-func newCallerHook(nameModule string, callerSkipFrameCount int) callerHook {
-	return callerHook{nameModule: nameModule, callerSkipFrameCount: callerSkipFrameCount}
+func newCallerHook(nameModule, ignorePrefix string, callerSkipFrameCount int) callerHook {
+	return callerHook{
+		nameModule:           nameModule,
+		ignorePrefix:         ignorePrefix,
+		callerSkipFrameCount: callerSkipFrameCount,
+	}
 }
 
 type callerHook struct {
 	nameModule           string
+	ignorePrefix         string
 	callerSkipFrameCount int
 }
 
@@ -23,12 +28,9 @@ func (ch callerHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
 	stack := NewStacktrace()
 	var filterFrames []frame
 	for _, v := range stack.Frames {
-		if strings.HasPrefix(v.function, ch.nameModule) {
+		if strings.HasPrefix(v.function, ch.nameModule) && !strings.HasPrefix(v.function, ch.ignorePrefix) {
 			filterFrames = append(filterFrames, v)
 		}
-	}
-	if len(filterFrames) >= ch.callerSkipFrameCount+1 {
-		filterFrames = filterFrames[ch.callerSkipFrameCount+1:]
 	}
 
 	if len(filterFrames) == 0 {
