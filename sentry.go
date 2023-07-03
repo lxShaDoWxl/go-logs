@@ -75,7 +75,8 @@ func DefferSentry() {
 	if err := recover(); err != nil {
 		hub := sentry.CurrentHub().Clone()
 		if v, ok := err.(ExceptionError); ok {
-			hub.Scope().SetContext("exception_metadata", recursiveUnwrap(v.GetMeta(), 1))
+			hub.Scope().SetContext("Exception Metadata", map[string]interface{}{"data": v.meta})
+			//hub.Scope().SetContext("Exception Metadata By Level", recursiveUnwrap(v.GetMeta(), 1))
 			err = v.Err
 		}
 		vError, ok := err.(*errors.Error)
@@ -147,7 +148,8 @@ func sendLogSentry(ctx context.Context, err error) {
 		hub = sentry.CurrentHub().Clone()
 	}
 	if v, ok := err.(ExceptionError); ok {
-		hub.Scope().SetContext("exception_metadata", recursiveUnwrap(v.GetMeta(), 1))
+		hub.Scope().SetContext("Exception Metadata", map[string]interface{}{"data": v.meta})
+		//hub.Scope().SetContext("Exception Metadata By Level", recursiveUnwrap(v.GetMeta(), 1))
 		err = v.Err
 	}
 	eventID := hub.CaptureException(err)
