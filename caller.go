@@ -7,10 +7,11 @@ import (
 	"strings"
 )
 
-func newCallerHook(nameModule, ignorePrefix string, callerSkipFrameCount int) callerHook {
+func newCallerHook(nameModule, ignorePrefix string, callerSkipFrameCount int, ignorePrefixes []string) callerHook {
 	return callerHook{
 		nameModule:           nameModule,
 		ignorePrefix:         ignorePrefix,
+		ignorePrefixes:       ignorePrefixes,
 		callerSkipFrameCount: callerSkipFrameCount,
 	}
 }
@@ -18,6 +19,7 @@ func newCallerHook(nameModule, ignorePrefix string, callerSkipFrameCount int) ca
 type callerHook struct {
 	nameModule           string
 	ignorePrefix         string
+	ignorePrefixes       []string
 	callerSkipFrameCount int
 }
 
@@ -28,15 +30,29 @@ func (ch callerHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
 	stack := NewStacktrace()
 	var filterFrames []frame
 	for _, v := range stack.Frames {
-		if strings.HasPrefix(v.function, ch.nameModule) && !strings.HasPrefix(v.function, ch.ignorePrefix) {
+		if ch.checkIgnorePrefix(v.function) {
+			continue
+		}
+		if strings.HasPrefix(v.function, ch.nameModule) {
 			filterFrames = append(filterFrames, v)
 		}
 	}
-
 	if len(filterFrames) == 0 {
 		return
 	}
 	e.Str(zerolog.CallerFieldName, filterFrames[0].file+":"+strconv.Itoa(filterFrames[0].line))
+}
+
+func (ch callerHook) checkIgnorePrefix(function string) bool {
+	if strings.HasPrefix(function, ch.ignorePrefix) {
+		return true
+	}
+	for _, prefix := range ch.ignorePrefixes {
+		if strings.HasPrefix(function, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 type frame struct {
