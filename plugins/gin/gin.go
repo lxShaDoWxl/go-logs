@@ -64,7 +64,7 @@ func (h *handler) handle(ctx *gin.Context) {
 		ctxStd = sentry.SetHubOnContext(ctxStd, hub)
 	}
 	span := sentry.StartSpan(ctxStd, "http.server",
-		sentry.TransactionName(fmt.Sprintf("%s %s", ctx.Request.Method, ctx.Request.URL.Path)),
+		sentry.WithTransactionName(fmt.Sprintf("%s %s", ctx.Request.Method, ctx.Request.URL.Path)),
 		sentry.ContinueFromRequest(ctx.Request),
 	)
 	defer span.Finish()
